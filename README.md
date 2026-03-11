@@ -11,7 +11,7 @@ EcoRoute is an Android app that calculates CO₂ emissions for travel routes and
 ## APK Download
 Download the latest APK from here!
 
-https://www.appcreator24.com/app3347770-q3zenh
+https://www.appcreator24.com/app3948383-kfn4v0
 
 ## Built With
 - OpenStreetMap
