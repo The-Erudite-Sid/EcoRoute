@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+
+<style>
+
+body{
+font-family:Arial;
+background:#e8f5e9;
+padding:20px;
+}
+
+h2{
+color:#1b5e20;
+}
+
+input,select,button{
+width:100%;
+padding:10px;
+margin-top:8px;
+border-radius:6px;
+border:1px solid #aaa;
+}
+
+button{
+background:#2e7d32;
+color:white;
+font-weight:bold;
+}
+
+#result{
+<div id="tracker"></div>
+margin-top:15px;
+font-size:16px;
+background:white;
+padding:12px;
+border-radius:8px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h2>Climate Action Calculator 🌱</h2>
+
+<p>Calculate how much carbon you save by choosing public transport.</p>
+
+<b>Distance Travelled (km)</b>
+<input id="distance" type="number" placeholder="Example: 50">
+
+<b>Transport You Would Have Used</b>
+<select id="mode">
+<option value="120">Car 🚗</option>
+<option value="255">Plane ✈️</option>
+</select>
+
+<button onclick="calculateSavings()">Calculate Climate Impact</button>
+
+<div id="result"></div>
+
+<script>
+
+function calculateSavings(){
+
+var distance=document.getElementById("distance").value;
+var originalFactor=document.getElementById("mode").value;
+
+var busFactor=70;
+var trainFactor=35;
+
+var originalEmission=(distance*originalFactor)/1000;
+var busEmission=(distance*busFactor)/1000;
+var trainEmission=(distance*trainFactor)/1000;
+
+var bestPublic=Math.min(busEmission,trainEmission);
+
+var saving=originalEmission-bestPublic;
+
+var trees=saving/21;
+
+var total=localStorage.getItem("co2Saved");
+
+if(!total){
+total=0;
+}
+
+total=parseFloat(total)+saving;
+
+localStorage.setItem("co2Saved",total);
+
+document.getElementById("result").innerHTML=
+
+"<b>This trip saved:</b> "+saving.toFixed(2)+" kg CO₂ 🌱<br><br>"+
+
+"<b>Lifetime savings:</b> "+total.toFixed(2)+" kg CO₂<br><br>"+
+
+"Equivalent to "+trees.toFixed(2)+" trees absorbing CO₂ for a year 🌳";
+
+}
+
+</script>
+
+</body>
+
+</html>

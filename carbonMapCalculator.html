@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+
+body{
+font-family:Verdana;
+margin:0;
+background:#f0f4f2;
+}
+
+#map{
+height:100vh;
+width:100%;
+}
+
+#panel{
+
+position:absolute;
+top:15px;
+left:50%;
+transform:translateX(-50%);
+
+background:white;
+padding:15px;
+
+border-radius:14px;
+
+box-shadow:0 6px 20px rgba(0,0,0,0.2);
+
+width:90%;
+max-width:420px;
+
+z-index:1000;
+
+}
+
+input,select,button{
+
+width:100%;
+padding:10px;
+margin-top:8px;
+
+border-radius:8px;
+border:1px solid #ddd;
+
+font-size:14px;
+
+}
+
+button{
+
+background:#2e7d32;
+color:white;
+border:none;
+
+font-weight:bold;
+cursor:pointer;
+
+}
+
+button:hover{
+background:#256728;
+}
+
+.suggestions{
+
+background:white;
+border-radius:6px;
+border:1px solid #ddd;
+
+max-height:150px;
+overflow:auto;
+
+}
+
+.suggestion-item{
+
+padding:8px;
+cursor:pointer;
+
+}
+
+.suggestion-item:hover{
+background:#eee;
+}
+
+#result{
+
+margin-top:10px;
+
+background:#f7faf8;
+padding:10px;
+
+border-radius:8px;
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="panel">
+
+<b>Start Location</b>
+<input id="start" placeholder="Enter start location" onkeyup="searchLocation(this.value,'startList')">
+<div id="startList" class="suggestions"></div>
+
+<b>Destination</b>
+<input id="end" placeholder="Enter destination" onkeyup="searchLocation(this.value,'endList')">
+<div id="endList" class="suggestions"></div>
+
+<b>Transport Mode</b>
+<select id="mode">
+<option value="120">Car 🚗</option>
+<option value="70">Bus 🚌</option>
+<option value="35">Train 🚆</option>
+<option value="255">Plane ✈️</option>
+<option value="5">Bicycle 🚲</option>
+</select>
+
+<button onclick="calculateRoute()">Calculate Route</button>
+
+<div id="result"></div>
+
+</div>
+
+<div id="map"></div>
+
+<script>
+
+var map = L.map('map').setView([22.59,78.96],5);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+attribution:'© OpenStreetMap'
+}).addTo(map);
+
+var startCoords=null;
+var endCoords=null;
+
+var routeLine;
+var startMarker;
+var endMarker;
+var currentDistance=0;
+
+async function searchLocation(query,listId){
+
+if(query.length < 3){
+document.getElementById(listId).innerHTML="";
+return;
+}
+
+const url =
+"https://photon.komoot.io/api/?q=" +
+encodeURIComponent(query) +
+"&limit=5";
+
+const res = await fetch(url);
+const data = await res.json();
+
+let html="";
+
+data.features.forEach(place=>{
+
+const name =
+place.properties.name +
+(place.properties.city ? ", "+place.properties.city : "");
+
+const lat = place.geometry.coordinates[1];
+const lon = place.geometry.coordinates[0];
+
+html += `
+<div class="suggestion-item"
+onclick="selectLocation('${name}',${lat},${lon},'${listId}')">
+${name}
+</div>`;
+
+});
+
+document.getElementById(listId).innerHTML = html;
+
+}
+
+let typingTimer;
+
+function searchLocationDebounced(query,listId){
+
+clearTimeout(typingTimer);
+
+typingTimer = setTimeout(()=>{
+searchLocation(query,listId);
+},300);
+
+}
+
+function selectLocation(name,lat,lon,listId){
+
+if(listId=="startList"){
+document.getElementById("start").value=name;
+startCoords={lat:lat,lng:lon};
+}
+
+else{
+document.getElementById("end").value=name;
+endCoords={lat:lat,lng:lon};
+}
+
+document.getElementById(listId).innerHTML="";
+
+}
+
+async function calculateRoute(){
+
+if(!startCoords||!endCoords){
+alert("Please select both locations");
+return;
+}
+
+var url="https://router.project-osrm.org/route/v1/driving/"+startCoords.lng+","+startCoords.lat+";"+endCoords.lng+","+endCoords.lat+"?overview=full&geometries=geojson";
+
+var res=await fetch(url);
+var data=await res.json();
+
+var route=data.routes[0];
+
+currentDistance=route.distance/1000;
+
+var coords=route.geometry.coordinates.map(c=>[c[1],c[0]]);
+
+if(routeLine) map.removeLayer(routeLine);
+if(startMarker) map.removeLayer(startMarker);
+if(endMarker) map.removeLayer(endMarker);
+
+routeLine=L.polyline(coords,{color:"green"}).addTo(map);
+
+startMarker=L.marker([startCoords.lat,startCoords.lng]).addTo(map);
+endMarker=L.marker([endCoords.lat,endCoords.lng]).addTo(map);
+
+map.fitBounds(routeLine.getBounds());
+
+updateEmission();
+
+}
+
+function updateEmission(){
+
+var factor=document.getElementById("mode").value;
+
+var emission=(currentDistance*factor)/1000;
+
+document.getElementById("result").innerHTML=
+"<b>Distance:</b> "+currentDistance.toFixed(2)+" km<br>"+
+"<b>Estimated CO₂:</b> "+emission.toFixed(2)+" kg";
+
+}
+
+document.getElementById("mode").addEventListener("change",function(){
+
+if(currentDistance>0){
+updateEmission();
+}
+
+});
+
+</script>
+
+</body>
+</html>
