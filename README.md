@@ -16,5 +16,5 @@ https://www.appcreator24.com/app3948383-kfn4v0
 ## Built With
 - OpenStreetMap
 - OSRM Routing
-- Photon Geocoding
+- Nominatim Geocoding
 - Ethora AI Integration
